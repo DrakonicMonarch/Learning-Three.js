@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>CSC321 Computer Graphics</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+    <!-- Get the JavaScript library from a server on the Internet. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js">
+    </script>
+
+    <style>
+        /*
+          Set margin to 0 and overflow to hidden
+          to get the use of the whole page for our
+          image.
+        */
+        margin: 0;
+        overflow: hidden;
+    </style>
+</head>
+
+<body>
+    <!-- 
+        Here is the part of the page (the 'div') that
+        will hold our picture.
+    -->
+    <div id="WebGL-output">
+    </div>
+</body>
+
+<!-- Here is where we put our code that draws the image. -->
+<script>
+
+    // Define a function that will produce a function that
+    // will draw a dot.
+    const makeDotDrawer = function( scene, dotRadius, dotColor ) {
+        let circleMaterial = new THREE.MeshBasicMaterial( {color:dotColor} );
+        let p = new THREE.CircleGeometry( dotRadius, 32 );
+
+        let drawDot = function( location ) {
+            let pdot = new THREE.Mesh( p, circleMaterial );
+            pdot.position.x = location.x;
+            pdot.position.y = location.y;
+            scene.add( pdot );
+        } // drawDot()
+
+        return drawDot;
+    } // makeDotDrawer()
+
+    // Define a function that will compute a weighted average
+    // of numbers (a and b are the numbers, t is the weight).
+    const avg = function( a, b, t ) {
+        return (1 - t) * a + t * b;
+    }; // avg()
+
+    // Define a function that will compute an average of points.
+    const avgOfPoints = function( p0, p1, t ) {
+        let x = avg( p0.x, p1.x, t );
+        let y = avg( p0.y, p1.y, t );
+        let z = avg( p0.z, p1.z, t );
+        return new THREE.Vector3(x, y, z);
+    }; // avgOfPoints()
+
+    // Define a function that will compute an average of averages.
+    const avgOfAvgOfPoints = function( p0, p1, p2, t ) {
+        let p01 = avgOfPoints( p0, p1, t );
+        let p12 = avgOfPoints( p1, p2, t );
+        let p02 = avgOfPoints( p01, p12, t );
+        return p02;
+    }; // avgOfAvgOfPoints())
+
+    // Define a function that will produce a function that
+    // will compute an average of averages of averages.
+    let makeBezier = function( p0, p1, p2, p3 ) {
+        let bezier = function( t ) {
+            let p02 = avgOfAvgOfPoints( p0, p1, p2, t );
+            let p13 = avgOfAvgOfPoints( p1, p2, p3, t );
+            let p03 = avgOfPoints( p02, p13, t );
+            return p03;
+        }; // f2()
+        return bezier;
+    } // makeBezier()
+
+    function init() {
+        let scene = new THREE.Scene();
+
+        const fov = 60;
+        const aspect = 4/3;
+        const near = 0.1;
+        const far = Number.MAX_SAFE_INTEGER;
+        const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+        camera.position.z = 5;
+
+        let renderer = new THREE.WebGLRenderer();
+        renderer.setClearColor( 0xAADDFF );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        // Define a function that will draw a dot with
+        // specified radius and color.
+        const drawDot = makeDotDrawer( scene, 0.0625, 0xFF0000 );
+
+        // Define the 4 points that will define a Bezier curve.
+        // TO-DO: Try different points.
+        const points = []
+        points.push( new THREE.Vector3( -2, -2, 0 ) );
+        points.push( new THREE.Vector3( -1, 1, 0 ) );
+        points.push( new THREE.Vector3( 1, 2, 0 ) );
+        points.push( new THREE.Vector3( 2, 2, 0 ) );
+
+        // Draw dots at the 4 points.
+        for( p of points ) {
+            drawDot( p );
+        } // for
+
+        // Draw the convex hull that the 4 points define.
+        const convexHull = new THREE.Geometry();
+
+        for( p of points ) {
+            convexHull.vertices.push( p );
+        } // of
+        convexHull.vertices.push( points[0] );
+
+        const options = {
+            opacity: 1.0,
+            color: 0xFF0000
+        };
+
+        const material = new THREE.LineBasicMaterial( options );
+        
+        const figure = new THREE.Line( convexHull, material );
+        scene.add( figure );
+
+        // Define a function that will draw a Bezier curve.
+        const bezier = makeBezier( points[0], points[1], points[2], points[3] );
+
+        // Construct the curve that the 4 control points define.
+        const bezierCurve = new THREE.Geometry();
+
+        // Steps is the number of connected line segments used to
+        // approximate the Bezier curve.
+        const steps = 32;
+        for( let i = 0; i < steps; i++ ) {
+            let t = i / steps;
+            bezierCurve.vertices.push( bezier(t) );
+        } // for
+
+        const curve = new THREE.Line( bezierCurve, material );
+        scene.add( curve );
+
+        document.getElementById( "WebGL-output").
+            appendChild( renderer.domElement );
+        renderer.render( scene, camera );
+    } // init()
+
+    window.onload = init;
+</script>
+
+</html>
