@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "fflate": "^0.6.10",
+    "stats": "^1.0.0",
     "three": "^0.128.0"
   },
   "devDependencies": {},

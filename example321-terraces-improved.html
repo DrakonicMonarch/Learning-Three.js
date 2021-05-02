@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+
+<html>
+
+  <head>
+    <title>CSC321 Computer Graphics</title>
+
+    <!-- Get the JavaScript library from a server on the Internet. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js">
+    </script>
+
+    <style>
+      /*
+          Set margin to 0 and overflow to hidden
+          to get the use of the whole page for our
+          image.
+        */
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!--
+        Here is the part of the page (the 'div') that
+        will hold our picture.
+    -->
+    <div id="WebGL-output">
+    </div>
+
+  </body>
+
+  <!-- Here is where we put our code that draws the image. -->
+  <script>
+    let renderer;
+    let scene;
+    let camera;
+    let figure;
+
+    const palette = {
+      lightGoldenrod: 0xFAFAD2,
+      lightSeaGreen: 0x20B2AA,
+      mediumAquamarine: 0x66CDAA,
+      midnightBlue: 0x191970,
+      mistyRose: 0xFFE4E1,
+      paleGreen: 0x98FB98,
+      slateBlue: 0x6A5ACD
+    };
+
+    function renderScene() {
+      figure.rotation.y += 0.01;
+
+      requestAnimationFrame(renderScene);
+      renderer.render(scene, camera)
+    } // renderScene()
+
+    function extrusionGeometry(specs) {
+      let crossSection = new THREE.Shape();
+
+      const xMin = specs.xMin;
+      const xMax = specs.xMax;
+
+      const xRange = xMax - xMin;
+
+      const yMin = specs.yMin;
+      const yMax = specs.yMax;
+
+      const yRange = yMax - yMin;
+
+      const m0 = specs.m0;
+      const m1 = specs.m1;
+
+
+      // Here we draw a line segment on the left
+      // side of the rectangle, a Bezier curve on
+      // the top, and another line segment on the
+      // right side of the rectangle.
+
+      // We are not explicitly draw the bottom
+      // of the rectangle. The software closes the
+      // rectangle with another line segment for us.
+
+      // Clockwise listing of points that will
+      // define the shape---a rectangle whose
+      // top edge is replaced with a Bezier curve
+
+      /*
+              let lowerLeft = new THREE.Vector2( xMin, yMin );
+              let upperLeft = new THREE.Vector2( xMin, yMax );
+              let controlLeft = new THREE.Vector2( xMin + xRange/4,
+                  yMax + m0 * yRange );
+              let controlRight = new THREE.Vector2( xMin + 3 * xRange/4,
+                  yMax + m1 * yRange );
+              let upperRight = new THREE.Vector2( xMax, yMax );
+              let lowerRight = new THREE.Vector2( xMax, yMin );
+
+              crossSection.moveTo( lowerLeft.x, lowerLeft.y );
+              crossSection.lineTo( upperLeft.x, upperLeft.y );
+
+              crossSection.bezierCurveTo(
+                  controlLeft.x, controlLeft.y,
+                  controlRight.x, controlRight.y,
+                  upperRight.x, upperRight.y );
+
+
+              crossSection.lineTo( lowerRight.x, lowerRight.y );
+      */
+
+      // Let's instead draw a Bezier curve on the left,
+      // a Bezier curve on the right, and a Bezier curve
+      // on the right.
+
+      // Let's also connect these curves in a smooth way.
+
+      // How many control points do I need to draw 3
+      // Bezier curves?
+
+      // It takes 4 points to specify a Bezier curve.
+
+      // The first curve will share a point with the
+      // second curve.
+
+      // The second curve will share a point with the
+      // third curve.
+
+      // So 2 points are shared and I do not need 12
+      // control points but only 12 - 2 = 10 control
+      // points.
+
+      // Let's put 3 control points on the left edge
+      // of a rectangle.
+
+      // Let's put another 2 control points somewhere
+      // between the left and right edges of the rectangle
+      // and a little above or a little below the top edge
+      // of the rectangle.
+
+      // Let's put another 3 control points on the right
+      // edge of the rectangle.
+
+      // Let's make a control point that is at the midpoint
+      // of the line segment that connects the
+      // highest control point on the left edge
+      // and the first of those control points in the middle.
+
+      // Let's make a control point that is at the midpoint
+      // of the line segment that connects the
+      // second of those control points in the middle and
+      // the highest control point on the right edge.
+
+      let left0 = new THREE.Vector2(xMin, yMin);
+      let left1 = new THREE.Vector2(xMin, yMin + yRange / 2);
+      let left2 = new THREE.Vector2(xMin, yMax);
+
+      let right0 = new THREE.Vector2(xMax, yMin);
+      let right1 = new THREE.Vector2(xMax, yMin + yRange / 2);
+      let right2 = new THREE.Vector2(xMax, yMax);
+
+      let controlLeft = new THREE.Vector2(xMin + xRange / 4,
+        yMax + m0 * yRange);
+      let controlRight = new THREE.Vector2(xMin + 3 * xRange / 4,
+        yMax + m1 * yRange);
+
+      let x = (left2.x + controlLeft.x) / 2;
+      let y = (left2.y + controlLeft.y) / 2;
+      let upperLeft = new THREE.Vector2(x, y);
+
+      // Why does not this statement do the same as the 3 lines above?
+      //let upperLeft = left2.add( controlLeft ).multiplyScalar( 0.5 );
+
+      x = (controlRight.x + right2.x) / 2;
+      y = (controlRight.y + right2.y) / 2;
+      let upperRight = new THREE.Vector2(x, y);
+
+      // Why does not this statement do the same as the 3 lines above?
+      //let upperRight = right2.add( controlRight ).multiplyScalar( 0.5 );
+
+      crossSection.moveTo(left0.x, left0.y);
+
+      crossSection.bezierCurveTo(left1.x, left1.y,
+        left2.x, left2.y,
+        upperLeft.x, upperLeft.y);
+
+      crossSection.bezierCurveTo(
+        controlLeft.x, controlLeft.y,
+        controlRight.x, controlRight.y,
+        upperRight.x, upperRight.y);
+
+      crossSection.bezierCurveTo(
+        right2.x, right2.y,
+        right1.x, right1.y,
+        right0.x, right0.y);
+
+      let extrusionOptions = {
+        amount: specs.thickness,
+        bevelThickness: 0,
+        bevelSize: 0,
+        curveSegments: 64
+      };
+
+      let result = new THREE.ExtrudeGeometry(crossSection,
+        extrusionOptions);
+
+      return result;
+    } // extrusionGeometry()
+
+    function makeLayer(components, level, specs, material) {
+      layerGeometry = extrusionGeometry(specs);
+      layer = new THREE.Mesh(layerGeometry, material);
+
+      layer.rotation.x = Math.PI / 2;
+      layer.rotation.z = -Math.PI / 2;
+      layer.position.y = 1 + level * specs.thickness;
+
+      components.push(layer);
+    } // makeLayer()
+
+    function makeListOfComponents() {
+      let components = [];
+
+      // layer #0
+
+      let groundMaterial = new THREE.MeshLambertMaterial({
+        color: palette.paleGreen
+      });
+
+      let waterMaterial = new THREE.MeshPhongMaterial({
+        color: palette.slateBlue
+      });
+
+      let specs = {
+        xMin: -20.0,
+        xMax: 14.0,
+        yMin: -16.0,
+        yMax: 12.0,
+        m0: 0.0,
+        m1: 0.0,
+        thickness: 0.5
+      };
+
+      makeLayer(components, 0, specs, waterMaterial);
+
+      // layer #1
+
+      specs.yMax = 5.0;
+      specs.m0 = 0.4; //0.8;
+      specs.m1 = -0.6;
+
+      makeLayer(components, 1, specs, groundMaterial);
+
+      // layer #2
+
+      specs.yMax = 4.0;
+
+      makeLayer(components, 2, specs, groundMaterial);
+
+      // layer #3
+
+      specs.xMin = specs.xMin + 1;
+      specs.xMax = specs.xMax - 1;
+      specs.yMax = 2.0;
+
+      makeLayer(components, 3, specs, groundMaterial);
+
+      // layer #4
+
+      specs.xMin = specs.xMin + 3;
+      //specs.xMax = specs.xMax - 5;
+      specs.yMax = -1.0;
+
+      makeLayer(components, 4, specs, groundMaterial);
+
+      return components;
+    } // makeListOfComponents()
+
+    function assembleByAdding(components) {
+      figure = new THREE.Object3D();
+      for (c of components) {
+        figure.add(c);
+      } // for
+      return figure;
+    } // assembleByAdding()
+
+    function assembleByMerging(components) {
+      let assembly = new THREE.Geometry();
+
+      for (c of components) {
+        c.updateMatrix();
+        assembly.merge(c.geometry, c.matrix);
+      } // for
+
+      figure = new THREE.Mesh(assembly, components[0].material);
+
+      return figure;
+    } // assembleByMergin()
+
+    function init() {
+
+      //let u = new THREE.Vector2( 1.0, 1.0 );
+      //let v = new THREE.Vector2( 5.0, 5.0 );
+      //let w = u.add(v).multiplyScalar( 0.5 );
+
+      //console.log( "w.x = " + w.x );
+      //console.log( "w.y = " + w.y );
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(45,
+        window.innerWidth / window.innerHeight, 0.1, 1000);
+
+      renderer = new THREE.WebGLRenderer();
+      renderer.setClearColor(palette.mistyRose);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMapEnabled = true;
+
+      let spotLight = new THREE.SpotLight(0xFFFFFF);
+      spotLight.position.set(40, 60, 50);
+
+      scene.add(spotLight);
+
+      let axes = new THREE.AxisHelper(20);
+      scene.add(axes);
+
+      // TO-DO: Try making small changes.
+      //     Change the values of parameters.
+      //     Learn the meaning and significance of parameters.
+
+      /*
+      let planeGeometry = new THREE.PlaneGeometry(48, 48, 1, 1);
+      let planeMaterial = new THREE.MeshPhongMaterial(
+        {color: 0x2E8B57} );
+      let plane = new THREE.Mesh( planeGeometry, planeMaterial );
+
+      plane.rotation.x = -0.5 * Math.PI;
+      plane.position.x = 0;
+      plane.position.y = 0;
+      plane.position.z = 0;
+      scene.add( plane )
+      */
+
+      let components = makeListOfComponents();
+
+      figure = assembleByAdding(components);
+      //figure = assembleByMerging( components );
+
+      scene.add(figure);
+
+      figure.castShow = true;
+      spotLight.castShadow = true;
+
+      //plane.receiveShadow = true;
+
+      camera.position.x = -12;
+      camera.position.y = 12;
+      camera.position.z = 40;
+      camera.lookAt(scene.position);
+
+      document.getElementById("WebGL-output").
+      appendChild(renderer.domElement);
+      //renderer.render( scene, camera );
+      renderScene();
+    }; // init()
+
+    window.onload = init;
+  </script>
+
+</html>
