@@ -7,70 +7,123 @@
       body {
         margin: 0;
       }
-
-      canvas {
-        width: 100%;
-        height: 100%;
-      }
     </style>
   </head>
 
   <body>
     <script src="node_modules/three/build/three.js"></script>
+    <script src="node_modules/three/examples/js/controls/OrbitControls.js"></script>
     <script>
       // set up components
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
       const renderer = new THREE.WebGLRenderer();
-      const centerPoint = new THREE.Vector3(0, 0, 0);
       const loader = new THREE.TextureLoader();
       const storyHeight = 10;
+
+      // adjust the camera
+      camera.position.z = 60;
+      camera.position.y = 6;
+
+      // add lighting
+      let directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1.0);
+      let ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.5);
+      directionalLight.position.set(30, 100, 50);
+      scene.add(directionalLight);
+      scene.add(ambientLight);
 
       // set colors
       let colors = {};
       colors.skyBlue = 0x87CEEB;
-      colors.dimGrey = 0x696969;
-      colors.darkGrey = 0xA9A9A9;
+      colors.dimGrey = 0x222222;
+      //colors.darkGrey = 0xA9A9A9;
       colors.gainsboro = 0xDCDCDC;
-      colors.sienna = 0xA0522D;
+      //colors.sienna = 0xA0522D;
       colors.oldLace = 0xFDF5E6;
-      colors.papayaWhip = 0xFFEFD5;
+      //colors.papayaWhip = 0xFFEFD5;
 
       // set textures
       let textures = {};
-      textures.redBrick = new THREE.MeshBasicMaterial({
-        map: loader.load('textures/redBrick.png')
+      textures.redBrick = loader.load('textures/redBrick.png');
+      textures.redBrick.wrapS = THREE.RepeatWrapping;
+      textures.redBrick.wrapT = THREE.RepeatWrapping;
+      textures.greyBrick = loader.load('textures/greyBrick.jpg');
+      textures.greyBrick.wrapS = THREE.RepeatWrapping;
+      textures.greyBrick.wrapT = THREE.RepeatWrapping;
+      textures.street = loader.load('textures/street.jpg');
+      textures.street.wrapS = THREE.RepeatWrapping;
+      textures.street.repeat.set(5, 1);
+      textures.sidewalk = loader.load('textures/sidewalk.jpg');
+      textures.sidewalk.wrapT = THREE.RepeatWrapping;
+      textures.door = loader.load('textures/door.jpg');
+      textures.storefront1 = loader.load('textures/storefront1.jpg');
+      textures.storefront2 = loader.load('textures/storefront2.jpg');
+      textures.storefront3 = loader.load('textures/storefront3.jpg');
+      textures.storefront4 = loader.load('textures/storefront4.jpg');
+      textures.storefront5 = loader.load('textures/storefront5.jpg');
+
+      // set materials
+      let materials = {};
+      materials.redBrick = new THREE.MeshLambertMaterial({
+        map: textures.redBrick
       });
-      textures.greyBrick = new THREE.MeshBasicMaterial({
-        map: loader.load('textures/greyBrick.jpg')
+      materials.greyBrick = new THREE.MeshLambertMaterial({
+        map: textures.greyBrick
       });
-      textures.street = new THREE.MeshBasicMaterial({
-        map: loader.load('textures/street.jpg')
+      materials.street = new THREE.MeshLambertMaterial({
+        map: textures.street
       });
-      textures.sidewalk = new THREE.MeshBasicMaterial({
-        map: loader.load('textures/sidewalk.jpg')
+      materials.sidewalk = new THREE.MeshLambertMaterial({
+        map: textures.sidewalk
       });
-      textures.door = new THREE.MeshBasicMaterial({
-        map: loader.load('textures/door.jpg')
+      materials.door = new THREE.MeshLambertMaterial({
+        map: textures.door
       });
-      textures.storefront1 = new THREE.MeshBasicMaterial({
-        map: loader.load('textures/storefront1.jpg')
+      materials.storefront1 = [
+        new THREE.MeshLambertMaterial({
+          map: textures.storefront1
+        }),
+        materials.greyBrick
+      ];
+      materials.storefront2 = [
+        new THREE.MeshLambertMaterial({
+          map: textures.storefront2
+        }),
+        materials.redBrick
+      ];
+      materials.storefront3 = [
+        new THREE.MeshLambertMaterial({
+          map: textures.storefront3
+        }),
+        materials.redBrick
+      ];
+      materials.storefront4 = [
+        new THREE.MeshLambertMaterial({
+          map: textures.storefront4
+        }),
+        materials.greyBrick
+      ];
+      materials.storefront5 = [
+        new THREE.MeshLambertMaterial({
+          map: textures.storefront5
+        }),
+        materials.redBrick
+      ];
+      materials.backboard = new THREE.MeshPhysicalMaterial({
+        color: colors.dimGrey,
+        clearcoat: 1.0
       });
-      textures.storefront2 = new THREE.MeshBasicMaterial({
-        map: loader.load('textures/storefront2.jpg')
+      materials.gainsboro = new THREE.MeshLambertMaterial({
+        color: colors.gainsboro
       });
-      textures.storefront3 = new THREE.MeshBasicMaterial({
-        map: loader.load('textures/storefront3.png')
-      });
-      textures.storefront4 = new THREE.MeshBasicMaterial({
-        map: loader.load('textures/storefront4.jpg')
-      });
-      textures.storefront5 = new THREE.MeshBasicMaterial({
-        map: loader.load('textures/storefront5.png')
+      materials.oldLace = new THREE.MeshLambertMaterial({
+        color: colors.oldLace
       });
 
       // set up the renderer
       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(colors.skyBlue);
+      renderer.shadowMapEnabled = true;
       document.body.appendChild(renderer.domElement);
 
       //resize with window
@@ -82,30 +135,163 @@
         camera.updateProjectionMatrix();
       });
 
-      // adjust the camera
-      camera.position.z = 20;
-      camera.position.y = 7;
-      camera.lookAt(centerPoint);
-
-      // add lighting
-      let directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1.0, 20);
-      let ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.5);
-      pointLight.position.set(7, 7, 0);
-      scene.add(pointLight);
-      scene.add(ambientLight);
-
       // create buildings
-      // building type 1
-      const type1 = new THREE.Group();
+      // windows
+      let rectWindow = new THREE.Group();
 
+      // build geometry
+      let backboardGeometry = new THREE.BoxGeometry(3.9, 5.9, 0.25);
+      let beamSGeometry = new THREE.BoxGeometry(0.5, 5.5, 0.5);
+      let beamCGeometry = new THREE.BoxGeometry(0.5, 4, 0.5);
+      let beamMGeometry = new THREE.BoxGeometry(0.3, 5.9, 0.4);
+      let beamMRGeometry = new THREE.BoxGeometry(0.3, 4, 0.4);
+      let sillGeometry = new THREE.BoxGeometry(0.5, 4.5, 1);
 
-      // rum game
-      const GameLoop = function() {
-        requestAnimationFrame(GameLoop);
-        renerer.render(scene, camera);
+      // build meshes
+      let backboard = new THREE.Mesh(backboardGeometry, materials.backboard);
+      backboard.translateY(0.025);
+      let beamL = new THREE.Mesh(beamSGeometry, materials.oldLace);
+      beamL.translateX(-1.75);
+      let beamR = new THREE.Mesh(beamSGeometry, materials.oldLace);
+      beamR.translateX(1.75);
+      let beamT = new THREE.Mesh(beamCGeometry, materials.oldLace);
+      beamT.rotateZ(Math.PI / 2);
+      beamT.translateX(2.75);
+      let beamB = new THREE.Mesh(beamCGeometry, materials.oldLace);
+      beamB.rotateZ(Math.PI / 2);
+      beamB.translateX(-2.25);
+      let beamM = new THREE.Mesh(beamMGeometry, materials.oldLace);
+      let beamMU = new THREE.Mesh(beamMRGeometry, materials.oldLace);
+      beamMU.rotateZ(Math.PI / 2);
+      beamMU.translateX(1.0);
+      let beamMB = new THREE.Mesh(beamMRGeometry, materials.oldLace);
+      beamMB.rotateZ(Math.PI / 2);
+      beamMB.translateX(-0.6);
+      let sillT = new THREE.Mesh(sillGeometry, materials.gainsboro);
+      sillT.rotateZ(Math.PI / 2);
+      sillT.translateX(3.25);
+      let sillB = new THREE.Mesh(sillGeometry, materials.gainsboro);
+      sillB.rotateZ(Math.PI / 2);
+      sillB.translateX(-2.75);
+
+      // add all shapes to group
+      rectWindow.add(backboard);
+      rectWindow.add(beamL);
+      rectWindow.add(beamR);
+      rectWindow.add(beamT);
+      rectWindow.add(beamB);
+      rectWindow.add(beamM);
+      rectWindow.add(beamMU);
+      rectWindow.add(beamMB);
+      rectWindow.add(sillB);
+      rectWindow.add(sillT);
+
+      // window positions
+      rectWindow.translateZ(7.5);
+      let windowLeft = rectWindow.clone();
+      windowLeft.translateX(-6);
+      let windowCenter = rectWindow.clone();
+      let windowRight = rectWindow.clone();
+      windowRight.translateX(6);
+
+      // building types
+      // basic box
+      let box = new THREE.BoxGeometry(2 * storyHeight, storyHeight, 1.5 * storyHeight);
+
+      // grey buildings
+      let greyType = new THREE.Group();
+      let greyBox = new THREE.Mesh(box, materials.greyBrick);
+      greyType.add(greyBox);
+      greyType.add(windowLeft);
+      greyType.add(windowCenter);
+      greyType.add(windowRight);
+      greyType.translateY(5);
+
+      // red buildings
+      let redType = new THREE.Group();
+      let redBox = new THREE.Mesh(box, materials.redBrick);
+      redType.add(redBox);
+      redType.add(windowLeft.clone());
+      redType.add(windowCenter.clone());
+      redType.add(windowRight.clone());
+      redType.translateY(5);
+
+      // function to quickly repeat floor creation
+      let addFloors = function(type, levels, y = 10, x = 0, z = 0) {
+        let building = new THREE.Group();
+        for (i = 0; i < levels; i++) {
+          floor = type.clone();
+          floor.translateY(y + (i * storyHeight));
+          building.add(floor);
+        }
+        return building;
+      }
+
+      let b1 = addFloors(greyType, 4).clone();
+      let b2 = addFloors(redType, 3).clone();
+      let b3 = addFloors(redType, 5).clone();
+      let b4 = addFloors(greyType, 4).clone();
+      let b5 = addFloors(redType, 4).clone();
+      let b6 = addFloors(greyType, 5).clone();
+      let b7 = addFloors(redType, 3).clone();
+
+      b1.translateX(-20);
+      b1.translateZ(45);
+      b1.rotateY(Math.PI / 2);
+      b2.translateX(-20);
+      b2.translateZ(22.5);
+      b2.rotateY(Math.PI / 2);
+      b3.translateX(-20);
+      b3.rotateY(Math.PI / 2);
+      b4.translateZ(-20);
+      b5.translateX(20);
+      b5.rotateY(-Math.PI / 2);
+      b6.translateX(20);
+      b6.translateZ(22.5);
+      b6.rotateY(-Math.PI / 2);
+      b7.translateX(20);
+      b7.translateZ(45);
+      b7.rotateY(-Math.PI / 2);
+
+      // storefront geometry
+      storefrontGeometry = new BoxGeometry(20, 10, 15);
+      storefrontGeometry.geometry.faces[0].materialIndex = 1;
+      storefrontGeometry.geometry.faces[1].materialIndex = 1;
+      storefrontGeometry.geometry.faces[2].materialIndex = 1;
+      storefrontGeometry.geometry.faces[3].materialIndex = 1;
+      storefrontGeometry.geometry.faces[4].materialIndex = 0;
+      storefrontGeometry.geometry.faces[5].materialIndex = 1;
+
+      // create storefronts
+      let storefront1 = new THREE.Mesh(storefrontGeometry, materials.storefront1);
+
+      let roadGeometry = new THREE.PlaneGeometry(60, 20, 6, 2);
+      let road = new THREE.Mesh(roadGeometry, materials.street);
+      road.rotateX(-Math.PI / 2);
+      road.rotateZ(Math.PI / 2);
+      road.translateX(-25);
+
+      // add all items to the scene
+      scene.add(b1);
+      scene.add(storefront1);
+      scene.add(b2);
+      scene.add(b3);
+      scene.add(b4);
+      scene.add(b5);
+      scene.add(b6);
+      scene.add(b7);
+      scene.add(road);
+      //test space
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      //test space ends
+
+      // run graphics
+      const GraphicLoop = function() {
+        requestAnimationFrame(GraphicLoop);
+        renderer.render(scene, camera);
       };
 
-      GameLoop();
+      GraphicLoop();
     </script>
   </body>
 
